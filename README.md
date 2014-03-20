@@ -1,6 +1,6 @@
 [1]: https://github.com/mikejsavage/rssc-sendmail
 
-rssc will scrape a list of RSS or Atom feeds into an SQLite database and
+rssc scrapes a list of RSS or Atom feeds into an SQLite database and
 then exit. It is not designed to be used by itself - and users
 attempting to do will be underwhelmed - but paired with cron and a
 frontend of some sort. (for example [rssc-sendmail][1])
