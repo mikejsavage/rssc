@@ -27,8 +27,8 @@ entry like the following to your crontab:
 Configuration
 -------------
 
-The only configuration rssc needs is a list of feeds to scrape. It
-searches for these in `/etc/rssc.conf`. It expects a single URL per
+The only configuration rssc needs is a list of feeds to scrape. It looks
+for these in `/etc/rssc.conf`, which should contain a single URL per
 line. For example:
 
 	http://what-if.xkcd.com/feed.atom
