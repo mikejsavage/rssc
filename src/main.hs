@@ -3,6 +3,8 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 
+-- import Debug.Trace
+
 import Data.Maybe
 import Data.List
 
@@ -29,6 +31,8 @@ data Story = Story {
 
 urlsPath = "/etc/rssc.conf"
 dbPath = "/var/lib/rss/feeds.sq3"
+
+-- t x = trace ( show x ) x
 
 initDB db = do
 	run db "CREATE TABLE IF NOT EXISTS feeds (\
@@ -111,10 +115,10 @@ parseDate formats date =
 	in first >>= return . toInteger . round . utcTimeToPOSIXSeconds
 
 findChildS :: String -> Element -> Maybe Element
-findChildS name elem = findChild ( QName name Nothing Nothing ) elem
+findChildS name elem = filterChildName ( ( == name ) . qName ) elem
 
 findChildrenS :: String -> Element -> [ Element ]
-findChildrenS name elem = findChildren ( QName name Nothing Nothing ) elem
+findChildrenS name elem = filterChildrenName ( ( == name ) . qName ) elem
 
 childText :: String -> Element -> Maybe String
 childText name elem = findChildS name elem >>= ( return . strContent )
@@ -125,7 +129,7 @@ filterAlternate elem = qName ( elName elem ) == "link" && rel == Just "alternate
 		
 atomLink :: Element -> Maybe String
 atomLink elem = do
-	child <- filterChild filterAlternate elem
+	child <- filterChild filterAlternate elem <|> findChildS "link" elem
 	findAttr ( QName "href" Nothing Nothing ) child
 
 parseItem :: Element -> Maybe Story
@@ -183,7 +187,6 @@ parseAtom url xml = do
 
 		entries = findChildrenS "entry" xml
 		stories = catMaybes $ map parseEntry entries
-
 
 parseFeed :: ( String, String ) -> Maybe Feed
 parseFeed ( url, feed ) = rssParsed <|> atomParsed
