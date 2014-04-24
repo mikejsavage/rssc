@@ -19,10 +19,10 @@ Building:
 	$ make
 	$ make install
 
-To run (in this case every 15 minutes and as the `rssc` user), add an
-entry like the following to your crontab:
+To run (in this case every 15 minutes), add an entry like the following
+to your crontab:
 
-	*/15 * * * * rssc rssc
+	*/15 * * * * rssc
 
 Configuration
 -------------
