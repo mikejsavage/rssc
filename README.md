@@ -24,6 +24,10 @@ to your crontab:
 
 	*/15 * * * * rssc
 
+`make install` will create an unprivileged `rssc` user for you and
+chown its data directory, so I recommend you add the above to `rssc`'s
+crontab and not root's.
+
 Configuration
 -------------
 
