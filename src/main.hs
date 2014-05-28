@@ -126,7 +126,7 @@ childText name elem = findChildS name elem >>= ( return . strContent )
 filterAlternate elem = qName ( elName elem ) == "link" && rel == Just "alternate"
 	where
 		rel = findAttr ( QName "rel" Nothing Nothing ) elem
-		
+
 atomLink :: Element -> Maybe String
 atomLink elem = do
 	child <- filterChild filterAlternate elem <|> findChildS "link" elem
