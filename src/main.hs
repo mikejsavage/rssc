@@ -14,6 +14,7 @@ import Data.Time.Clock.POSIX
 
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Network.HTTP.Client as Client
+import Network.URI
 import Network.HTTP.Conduit
 
 import Database.HDBC
@@ -127,13 +128,37 @@ filterAlternate elem = qName ( elName elem ) == "link" && rel == Just "alternate
 	where
 		rel = findAttr ( QName "rel" Nothing Nothing ) elem
 
+showURI :: URI -> String
+showURI uri = uriToString id uri ""
+
+buildStory :: String -> String -> String -> Integer -> String -> String -> Maybe Story
+buildStory base title link date body guid =
+	case parseRelativeReference link of
+		Nothing -> return Story {
+			title = title,
+			link = link,
+			date = date,
+			body = body,
+			guid = guid }
+		Just r -> do
+			uri <- parseAbsoluteURI base
+
+			let full = relativeTo r uri
+
+			return Story {
+				title = title,
+				link = showURI full,
+				date = date,
+				body = body,
+				guid = guid }
+
 atomLink :: Element -> Maybe String
 atomLink elem = do
 	child <- filterChild filterAlternate elem <|> findChildS "link" elem
 	findAttr ( QName "href" Nothing Nothing ) child
 
-parseItem :: Element -> Maybe Story
-parseItem xml = do
+parseItem :: String -> Element -> Maybe Story
+parseItem base xml = do
 	title <- childText "title" xml
 	link <- childText "link" xml
 	date <- childText "pubDate" xml >>= parseDate rssTimeFormats
@@ -141,12 +166,7 @@ parseItem xml = do
 
 	let guid = fromMaybe link ( childText "guid" xml )
 
-	return Story {
-		title = title,
-		link = link,
-		date = date,
-		body = body,
-		guid = guid }
+	buildStory base title link date body guid
 
 parseRSS :: String -> Element -> Maybe Feed
 parseRSS url xml = do
@@ -157,12 +177,12 @@ parseRSS url xml = do
 		link = fromMaybe "" $ childText "link" channel
 
 		items = findChildrenS "item" channel
-		stories = catMaybes $ map parseItem items
+		stories = catMaybes $ map ( parseItem url ) items
 
 	return $ Feed url title link stories
 
-parseEntry :: Element -> Maybe Story
-parseEntry xml = do
+parseEntry :: String -> Element -> Maybe Story
+parseEntry base xml = do
 	title <- childText "title" xml
 	link <- atomLink xml
 	date <- childText "updated" xml >>= parseDate atomTimeFormats
@@ -170,12 +190,7 @@ parseEntry xml = do
 
 	let guid = fromMaybe link ( childText "guid" xml )
 
-	return Story {
-		title = title,
-		link = link,
-		date = date,
-		body = body,
-		guid = guid }
+	buildStory base title link date body guid
 
 parseAtom :: String -> Element -> Maybe Feed
 parseAtom url xml = do
@@ -186,7 +201,7 @@ parseAtom url xml = do
 		link = fromMaybe "" $ childText "link" xml
 
 		entries = findChildrenS "entry" xml
-		stories = catMaybes $ map parseEntry entries
+		stories = catMaybes $ map ( parseEntry url ) entries
 
 parseFeed :: ( String, String ) -> Maybe Feed
 parseFeed ( url, feed ) = rssParsed <|> atomParsed
