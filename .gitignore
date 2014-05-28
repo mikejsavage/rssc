@@ -2,3 +2,5 @@
 *.hi
 *.o
 rssc
+rssc.conf
+feeds.sq3
