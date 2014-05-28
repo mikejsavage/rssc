@@ -166,7 +166,7 @@ parseEntry xml = do
 	title <- childText "title" xml
 	link <- atomLink xml
 	date <- childText "updated" xml >>= parseDate atomTimeFormats
-	body <- childText "content" xml
+	body <- childText "content" xml <|> childText "summary" xml
 
 	let guid = fromMaybe link ( childText "guid" xml )
 
