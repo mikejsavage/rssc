@@ -235,7 +235,7 @@ processFeeds :: Connection -> IO [ () ]
 processFeeds db = do
 	contents <- readFile urlsPath
 
-	let urls = lines contents
+	let urls = filter ( /= "" ) ( lines contents )
 
 	sems <- mapM downloadFeed urls
 	feeds <- mapM takeMVar sems
