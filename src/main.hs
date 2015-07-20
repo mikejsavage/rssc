@@ -111,7 +111,7 @@ atomTimeFormats = [
 parseDate :: [ String ] -> String -> Maybe Integer
 parseDate formats date =
 	let
-		parsed = map ( \form -> parseTime defaultTimeLocale form date ) formats
+		parsed = map ( \form -> parseTime Data.Time.Format.defaultTimeLocale form date ) formats
 		first = listToMaybe $ catMaybes parsed
 	in first >>= return . toInteger . round . utcTimeToPOSIXSeconds
 
