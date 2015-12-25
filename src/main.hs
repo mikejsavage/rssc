@@ -96,15 +96,12 @@ updateFeed db ( Feed url title link stories ) = do
 	foldM ( \_ story -> addStory db id story ) 0 stories
 	commit db
 
-rssTimeFormats :: [ String ]
-rssTimeFormats = [
+timeFormats :: [ String ]
+timeFormats = [
 	"%a, %_d %b %Y %_H:%M:%S %Z",
 	"%a, %_d %b %Y %_H:%M:%S",
 	"%d %b %Y %_H:%M:%S %Z",
-	"%d %b %Y %_H:%M:%S" ]
-
-atomTimeFormats :: [ String ]
-atomTimeFormats = [
+	"%d %b %Y %_H:%M:%S",
 	"%Y-%m-%dT%H:%M:%S%Q%Z",
 	"%Y-%m-%dT%H:%M:%S%Q" ]
 
@@ -161,7 +158,7 @@ parseItem :: String -> Element -> Maybe Story
 parseItem base xml = do
 	title <- childText "title" xml
 	link <- childText "link" xml
-	date <- childText "pubDate" xml >>= parseDate rssTimeFormats
+	date <- childText "pubDate" xml >>= parseDate timeFormats
 	body <- childText "description" xml
 
 	let guid = fromMaybe link ( childText "guid" xml )
@@ -185,7 +182,7 @@ parseEntry :: String -> Element -> Maybe Story
 parseEntry base xml = do
 	title <- childText "title" xml
 	link <- atomLink xml
-	date <- childText "updated" xml >>= parseDate atomTimeFormats
+	date <- childText "updated" xml >>= parseDate timeFormats
 	body <- childText "content" xml <|> childText "summary" xml
 
 	let guid = fromMaybe link ( childText "guid" xml )
