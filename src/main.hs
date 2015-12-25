@@ -1,3 +1,5 @@
+import System.Environment
+
 import Control.Applicative
 import Control.Concurrent
 import Control.Exception
@@ -31,7 +33,7 @@ data Story = Story {
 	guid :: String } deriving Show
 
 urlsPath = "/etc/rssc.conf"
-dbPath = "/var/lib/rss/feeds.sq3"
+defaultDBPath = "/var/lib/rss/feeds.sq3"
 
 t x = trace ( show x ) x
 
@@ -242,6 +244,12 @@ processFeeds db = do
 
 main :: IO ()
 main = do
+	args <- getArgs
+	let dbPath = case length args of
+		0 -> defaultDBPath
+		1 -> args !! 0
+		_ -> error "usage: rssc [db path.sq3]"
+
 	db <- connectSqlite3 dbPath
 	initDB db
 	processFeeds db
