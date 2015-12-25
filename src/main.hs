@@ -8,9 +8,9 @@ import Debug.Trace
 import Data.Maybe
 import Data.List
 
-import System.Locale
 import Data.Time.Format
 import Data.Time.Clock.POSIX
+import Data.Time.Locale.Compat
 
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Network.HTTP.Client as Client
@@ -108,7 +108,7 @@ timeFormats = [
 parseDate :: [ String ] -> String -> Maybe Integer
 parseDate formats date =
 	let
-		parsed = map ( \form -> parseTime Data.Time.Format.defaultTimeLocale form date ) formats
+		parsed = map ( \form -> parseTime defaultTimeLocale form date ) formats
 		first = listToMaybe $ catMaybes parsed
 	in first >>= return . toInteger . round . utcTimeToPOSIXSeconds
 

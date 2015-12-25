@@ -8,7 +8,7 @@ frontend of some sort. (for example [rssc-sendmail][1])
 Dependencies
 ------------
 
-haskell, hdbc-sqlite3, http-conduit, xml
+haskell, hdbc-sqlite3, http-conduit, xml, time-locale-compat
 
 Usage
 -----
