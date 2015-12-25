@@ -3,7 +3,7 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 
--- import Debug.Trace
+import Debug.Trace
 
 import Data.Maybe
 import Data.List
@@ -33,7 +33,7 @@ data Story = Story {
 urlsPath = "/etc/rssc.conf"
 dbPath = "/var/lib/rss/feeds.sq3"
 
--- t x = trace ( show x ) x
+t x = trace ( show x ) x
 
 initDB db = do
 	run db "CREATE TABLE IF NOT EXISTS feeds (\
@@ -158,7 +158,7 @@ parseItem :: String -> Element -> Maybe Story
 parseItem base xml = do
 	title <- childText "title" xml
 	link <- childText "link" xml
-	date <- childText "pubDate" xml >>= parseDate timeFormats
+	date <- ( childText "pubDate" xml <|> childText "date" xml ) >>= parseDate timeFormats
 	body <- childText "description" xml
 
 	let guid = fromMaybe link ( childText "guid" xml )
@@ -206,7 +206,7 @@ parseFeed ( url, feed ) = rssParsed <|> atomParsed
 		xml = parseXML feed
 		elems = onlyElems xml
 
-		rss = find ( ( == "rss" ) . qName . elName ) elems
+		rss = find ( ( \x -> x == "rss" || x == "RDF" ) . qName . elName ) elems
 		rssParsed = rss >>= parseRSS url
 
 		atom = find ( ( == "feed" ) . qName . elName ) elems
