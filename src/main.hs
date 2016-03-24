@@ -161,7 +161,7 @@ parseItem base xml = do
 	title <- childText "title" xml
 	link <- childText "link" xml
 	date <- ( childText "pubDate" xml <|> childText "date" xml ) >>= parseDate timeFormats
-	body <- childText "description" xml
+	body <- childText "description" xml <|> childText "encoded" xml
 
 	let guid = fromMaybe link ( childText "guid" xml )
 
