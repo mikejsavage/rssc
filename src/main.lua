@@ -1,4 +1,5 @@
 local xml = require( "xml" )
+local xml_handler = require( "handler" )
 local sqlite = require( "sqlite" )
 
 if #arg > 1 then
@@ -55,40 +56,6 @@ local function GET( url, num_redirects )
 	return body
 end
 
-local function maybe_child( xml, name )
-	for _, node in ipairs( xml ) do
-		if node.label == name then
-			return node
-		end
-	end
-end
-
-local function maybe_child_text( xml, name )
-	local c = maybe_child( xml, name )
-	if c then
-		return c[ 1 ]
-	end
-	return nil
-end
-
-local function child( xml, name )
-	return assert( maybe_child( xml, name ), "child: " .. name )
-end
-
-local function child_text( xml, name )
-	return assert( maybe_child_text( xml, name ), "child_text: " .. name )
-end
-
-local function children( xml, name )
-	return coroutine.wrap( function()
-		for _, node in ipairs( xml ) do
-			if node.label == name then
-				coroutine.yield( node )
-			end
-		end
-	end )
-end
-
 local function get_feed_id( title, url )
 	db:run( "INSERT INTO feeds ( url, title ) VALUES ( ?, ? )", url, title )
 	local id = db:first( "SELECT id FROM feeds WHERE url = ?", url ).id
@@ -101,56 +68,71 @@ local function add_story( feed_id, guid, title, url )
 		feed_id, guid, title, url )
 end
 
+local function text( node )
+	if node then
+		return node[ 1 ] or node
+	end
+end
+
 local function update_rss( url, rss )
-	local channel = child( rss, "channel" )
-	local feed_title = maybe_child_text( channel, "title" ) or url
-	local feed_url = maybe_child_text( channel, "link" ) or url
+	local channel = rss.channel
+	local feed_title = text( channel.title ) or url
+	local feed_url = text( channel.link ) or url
 	local feed_id = get_feed_id( feed_title, feed_url )
 
-	for story in children( channel, "item" ) do
-		-- local date = maybe_child_text( story, "pubDate" ) or child_text( story, "date" )
-		-- local content = maybe_child_text( story, "description" ) or child_text( story, "encoded" )
+	for _, story in ipairs( channel.item ) do
+		-- local date = story.pubDate or story.date
+		-- local content = story.description
 
-		local url = maybe_child_text( story, "link" )
-		local guid = maybe_child_text( story, "guid" )
+		local url = text( story.link )
+		local guid = text( story.guid )
 		url = url or guid
 		guid = guid or url
 		assert( url, "no url" )
 
-		local title = maybe_child_text( story, "title" ) or url
+		local title = text( story.title ) or url
 
+		print( feed_id, guid, title, url )
 		add_story( feed_id, guid, title, url )
 	end
 end
 
+local function parse_atom_link( link )
+	if link._attr then
+		return link._attr.href
+	end
+
+	for _, x in ipairs( link ) do
+		if x._attr.rel == "alternate" then
+			return x._attr.href
+		end
+	end
+
+	for _, x in ipairs( link ) do
+		if x._attr.href then
+			return x._attr.href
+		end
+	end
+end
+
 local function update_atom( url, atom )
-	local feed_title = maybe_child_text( atom, "title" ) or url
-	local feed_url = maybe_child_text( atom, "link" ) or url
+	local feed_title = text( atom.title ) or url
+	local feed_url = parse_atom_link( atom.link ) or url
 	local feed_id = get_feed_id( feed_title, feed_url )
 
-	for story in children( atom, "entry" ) do
-		-- local date = child_text( story, "updated" )
-		-- local content = maybe_child_text( story, "content" ) or child_text( story, "summary" )
+	for _, story in ipairs( atom.entry ) do
+		-- local date = story.updated
+		-- local content = story.content or story.summary
 
-		local url = nil
-		local guid = maybe_child_text( story, "guid" )
-
-		for _, node in ipairs( story ) do
-			if node.label == "link" then
-				if not url then
-					url = node.xarg.href
-				elseif node.xarg.rel == "alternate" then
-					url = node.xarg.href
-				end
-			end
-		end
-
+		local url = parse_atom_link( story.link )
+		local guid = text( story.guid )
 		url = url or guid
 		guid = guid or url
 		assert( url, "no url" )
 
-		local title = maybe_child_text( story, "title" ) or url
+		local title = text( story.title ) or url
 
+		print( feed_id, guid, title, url )
 		add_story( feed_id, guid, title, url )
 	end
 end
@@ -159,11 +141,12 @@ local function update_feed( url )
 	local body, err = GET( url )
 	assert( body, err )
 
-	body = body:gsub( "<!%[CDATA%[.-%]%]>", "" )
-	local parsed = xml.parse( body )
+	local parser = xmlParser( simpleTreeHandler() )
+	parser:parse( body )
+	local parsed = parser._handler.root
 
-	local rss = maybe_child( parsed, "rss" ) or maybe_child( parsed, "RDF" )
-	local atom = maybe_child( parsed, "feed" )
+	local rss = parsed.rss or parsed.RDF
+	local atom = parsed.feed
 	assert( rss or atom, "can't find a feed" )
 
 	if rss then
