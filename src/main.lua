@@ -16,7 +16,7 @@ function io.readfile( path )
 	return contents
 end
 
-local feeds = io.readfile( "/etc/rssc.conf" )
+local feeds = io.readfile( urls_path )
 
 local db = sqlite.open( db_path )
 
@@ -173,10 +173,14 @@ local function update_feed( url )
 	end
 end
 
+local function on_error( message )
+	return debug.traceback( message, 2 )
+end
+
 for url in feeds:gmatch( "%S+" ) do
 	print( "Updating " .. url )
-	local ok, err = pcall( update_feed, url )
+	local ok, err = xpcall( update_feed, on_error, url )
 	if not ok then
-		io.stderr:write( "failed: " .. err .. "\n" )
+		io.stderr:write( "Updating " .. url .. " failed: " .. err .. "\n" )
 	end
 end
