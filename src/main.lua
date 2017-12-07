@@ -92,7 +92,6 @@ local function update_rss( url, rss )
 
 		local title = text( story.title ) or url
 
-		print( feed_id, guid, title, url )
 		add_story( feed_id, guid, title, url )
 	end
 end
